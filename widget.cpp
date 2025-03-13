@@ -6,14 +6,33 @@ Widget::Widget(QWidget *parent)
     , ui(new Ui::Widget)
 {
     ui->setupUi(this);
+    setButtonState();
     QObject::connect(&socket_, &QAbstractSocket::connected, this, &Widget::doConnected);
     QObject::connect(&socket_, &QAbstractSocket::disconnected, this, &Widget::doDisconnected);
     QObject::connect(&socket_, &QIODevice::readyRead, this, &Widget::doReadyRead);
+    QObject::connect(&socket_, &QAbstractSocket::stateChanged, this, &Widget::setButtonState);
 }
 
 Widget::~Widget()
 {
     delete ui;
+}
+
+void Widget::setButtonState()
+{
+    if(socket_.state() == QSslSocket::ConnectedState) {
+        ui->pbConnect->setEnabled(false);
+        ui->pbDisconnect->setEnabled(true);
+        ui->pbSend->setEnabled(true);
+        ui->cbSSL->setEnabled(false);
+    }
+    else {
+        ui->pbConnect->setEnabled(true);
+        ui->pbDisconnect->setEnabled(false);
+        ui->pbSend->setEnabled(false);
+        ui->cbSSL->setEnabled(true);
+    }
+
 }
 
 void Widget::on_pbConnect_clicked()
@@ -35,6 +54,9 @@ void Widget::on_pbDisconnect_clicked()
     socket_.disconnectFromHost();
 }
 void Widget::doDisconnected() {
+    ui->pbConnect->setEnabled(true);
+    ui->pbDisconnect->setEnabled(false);
+    ui->pbSend->setEnabled(false);
     ui->pteMessage->insertPlainText("Disconnected");
 }
 
